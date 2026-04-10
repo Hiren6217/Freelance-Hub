@@ -1,0 +1,18 @@
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/.env
+
+# Java / Maven
+backend/target/
+backend/maven.zip
+backend/apache-maven-3.9.9/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
