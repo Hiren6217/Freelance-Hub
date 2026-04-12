@@ -38,11 +38,13 @@ function LoginPageContent() {
     try {
       const response: any = await requestLoginOtp(email);
       if (response.otp) {
-        setSuccessMessage('Email delivery failed, but your OTP is available below.');
-        setFallbackOtp(response.otp);
-        return;
+        localStorage.setItem('pendingOtp', response.otp);
+      } else {
+        localStorage.removeItem('pendingOtp');
       }
-      router.push(`/verify-otp?mode=login&email=${encodeURIComponent(email)}`);
+      localStorage.setItem('pendingEmail', email);
+      const otpQuery = response.otp ? `&otp=${encodeURIComponent(response.otp)}` : '';
+      router.push(`/verify-otp?mode=login&email=${encodeURIComponent(email)}${otpQuery}`);
     } catch (err: any) {
       const message = err.message || 'Unable to send login OTP.';
       if (message.includes('Email not verified')) {

@@ -52,14 +52,14 @@ export default function SignupPage() {
       localStorage.setItem('hasSignedUp', 'true');
       localStorage.setItem('userEmail', formData.email);
       localStorage.setItem('userRole', formData.role);
-
       if (response.otp) {
-        setFallbackOtp(response.otp);
-        setError('Email delivery failed. Use this OTP to verify your email.');
-        return;
+        localStorage.setItem('pendingOtp', response.otp);
+      } else {
+        localStorage.removeItem('pendingOtp');
       }
-
-      router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(formData.email)}`);
+      localStorage.setItem('pendingEmail', formData.email);
+      const otpQuery = response.otp ? `&otp=${encodeURIComponent(response.otp)}` : '';
+      router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(formData.email)}${otpQuery}`);
     } catch (err: any) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {

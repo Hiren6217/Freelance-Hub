@@ -27,15 +27,25 @@ export default function HomePage() {
       <section className="page-shell">
         <section className="surface-subtle mt-6 overflow-hidden px-6 py-8 md:px-10 md:py-12">
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div className="surface-card fade-up rounded-[2rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
-              <Image
-                src="/job-portal-hero.svg"
-                alt="Freelancers finding jobs on a hiring platform"
-                width={760}
-                height={520}
-                className="w-full rounded-[1.5rem] object-cover"
-                priority
-              />
+            <div className="surface-card fade-up rounded-[2rem] border border-slate-200 bg-slate-50 p-4 shadow-sm overflow-hidden">
+              <div className="relative overflow-hidden rounded-[1.75rem] transition-all duration-700 ease-out hover:-translate-y-1 hover:shadow-xl">
+                <div className="pointer-events-none absolute -left-10 top-8 h-24 w-24 rounded-full bg-[#0a66c2]/10 blur-2xl animate-float-slow" />
+                <div className="pointer-events-none absolute right-6 bottom-6 h-20 w-20 rounded-full bg-[#22c55e]/10 blur-2xl animate-float-slow" />
+                <Image
+                  src="/freelancehub-hero.png"
+                  alt="FreelanceHub platform dashboard illustration"
+                  width={760}
+                  height={520}
+                  className="w-full rounded-[1.5rem] object-cover transition-transform duration-700 ease-out hover:scale-[1.005]"
+                  priority
+                />
+                <div className="scroll-indicator absolute bottom-5 left-1/2 z-10 flex w-[120px] -translate-x-1/2 flex-col items-center gap-2 text-center opacity-90">
+                  <div className="scroll-indicator-mouse flex h-12 w-7 items-start justify-center rounded-full border-2 border-[#0a66c2]">
+                    <span className="scroll-indicator-dot mt-2 block h-2 w-2 rounded-full bg-[#0a66c2]" />
+                  </div>
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">Scroll to explore</p>
+                </div>
+              </div>
             </div>
 
             <div className="fade-up fade-up-delay-1 space-y-6">
@@ -62,7 +72,7 @@ export default function HomePage() {
                   { title: 'Trusted recruiter network', body: 'Engage with vetted clients and referral-backed opportunities.' },
                   { title: 'Role-aware dashboard', body: 'See jobs, messages, and feedback tailored to freelancers.' },
                 ].map((item) => (
-                  <div key={item.title} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                  <div key={item.title} className="group rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition duration-500 ease-out hover:-translate-y-1 hover:shadow-lg">
                     <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
                     <p className="mt-2 text-sm text-slate-600">{item.body}</p>
                   </div>
@@ -70,10 +80,10 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-wrap gap-4">
-                <Link href="/dashboard" className="linkedin-button gap-2">
+                <Link href="/dashboard" className="linkedin-button gap-2 transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-lg">
                   Browse jobs <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href={hasSignedUp ? '/login' : '/signup'} className="linkedin-button-secondary">
+                <Link href={hasSignedUp ? '/login' : '/signup'} className="linkedin-button-secondary transition-transform duration-300 hover:-translate-y-0.5 hover:bg-[#edf5ff] hover:shadow-sm">
                   {hasSignedUp ? 'Sign in' : 'Join FreelanceHub'}
                 </Link>
               </div>
@@ -140,7 +150,7 @@ export default function HomePage() {
                     badge: 'New',
                   },
                 ].map((job) => (
-                  <div key={job.role} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+                  <div key={job.role} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm transition duration-500 ease-out hover:-translate-y-1 hover:shadow-lg">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-lg font-semibold">{job.role}</p>

@@ -15,10 +15,12 @@ export default function VerifyOtpPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [pendingOtp, setPendingOtp] = useState<string>('');
 
   useEffect(() => {
     const queryMode = searchParams.get('mode');
     const queryEmail = searchParams.get('email');
+    const queryOtp = searchParams.get('otp');
     setMode(queryMode);
 
     if (queryEmail) {
@@ -28,6 +30,16 @@ export default function VerifyOtpPage() {
       const pendingEmail = localStorage.getItem('pendingEmail');
       if (pendingEmail) {
         setEmail(pendingEmail);
+      }
+    }
+
+    if (queryOtp) {
+      setPendingOtp(queryOtp);
+      localStorage.setItem('pendingOtp', queryOtp);
+    } else {
+      const otp = localStorage.getItem('pendingOtp');
+      if (otp) {
+        setPendingOtp(otp);
       }
     }
   }, [searchParams]);
@@ -47,6 +59,7 @@ export default function VerifyOtpPage() {
     try {
       if (mode === 'signup') {
         const response = await verifySignupOtp(email, code);
+        localStorage.removeItem('pendingOtp');
         setMessage(response.message || 'Email verified successfully.');
         setTimeout(() => router.push('/login'), 1500);
         return;
@@ -54,6 +67,7 @@ export default function VerifyOtpPage() {
 
       if (mode === 'login') {
         const response = await verifyLoginOtp(email, code);
+        localStorage.removeItem('pendingOtp');
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('userId', response.userId.toString());
         localStorage.setItem('userEmail', response.email);
@@ -100,6 +114,13 @@ export default function VerifyOtpPage() {
 
           {message && <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">{message}</div>}
           {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+          {pendingOtp && (
+            <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+              <p>OTP code available for this session:</p>
+              <p className="mt-2 rounded-xl bg-white px-4 py-3 font-mono text-left text-sm text-slate-900">{pendingOtp}</p>
+              <p className="mt-2 text-xs text-slate-500">Use this code if email delivery fails or the message does not arrive.</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>

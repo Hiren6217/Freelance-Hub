@@ -87,9 +87,10 @@ public class AuthController {
 
         response.put("message", "Signup successful. Verify your email with the OTP sent to you.");
         response.put("email", user.getEmail());
+        response.put("emailSent", Boolean.toString(emailSent));
+        response.put("otp", user.getOtpCode());
         if (!emailSent) {
             response.put("warning", "Email delivery failed. Use the OTP code returned in this response.");
-            response.put("otp", user.getOtpCode());
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -189,9 +190,10 @@ public class AuthController {
         user = saveOtp(user, "LOGIN");
         boolean emailSent = sendOtpEmail(user, "login");
         response.put("message", "A login OTP has been sent to your email.");
+        response.put("emailSent", Boolean.toString(emailSent));
+        response.put("otp", user.getOtpCode());
         if (!emailSent) {
             response.put("warning", "Email delivery failed. Use the OTP code returned in this response.");
-            response.put("otp", user.getOtpCode());
         }
         return ResponseEntity.ok(response);
     }
