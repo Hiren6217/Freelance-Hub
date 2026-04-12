@@ -3,27 +3,22 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { login } from '@/lib/api';
+import { ArrowRight, KeyRound, ShieldCheck } from 'lucide-react';
+import { requestLoginOtp } from '@/lib/api';
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [hasSignedUp, setHasSignedUp] = useState(false);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [fallbackOtp, setFallbackOtp] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
   useEffect(() => {
-    // Check if user has signed up
-    const signedUp = localStorage.getItem('hasSignedUp');
-    setHasSignedUp(signedUp === 'true');
-    
-    // Check for success message from signup
-    const signupSuccess = searchParams.get('signup');
-    if (signupSuccess === 'success') {
-      setSuccessMessage('Account created successfully! Please log in.');
+    if (searchParams.get('signup') === 'success') {
+      setSuccessMessage('Account created successfully. Sign in to open your workspace.');
     }
   }, [searchParams]);
 
@@ -31,112 +26,125 @@ function LoginPageContent() {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
-    
-    if (!hasSignedUp) {
-      setError('Please sign up first before logging in!');
-      setTimeout(() => router.push('/signup'), 2000);
+    setFallbackOtp('');
+
+    if (!email) {
+      setError('Please enter your email address first.');
       return;
     }
-    
+
     setLoading(true);
 
     try {
-      // Call backend API
-      const response = await login(email, password);
-      
-      // Store auth token and user info
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('userId', response.userId.toString());
-      localStorage.setItem('userEmail', response.email);
-      localStorage.setItem('userName', response.name);
-      localStorage.setItem('userRole', response.role);
-      
-      // Redirect based on user role
-      if (response.role === 'CLIENT') {
-        router.push('/dashboard/client');
-      } else {
-        router.push('/dashboard/developer');
+      const response: any = await requestLoginOtp(email);
+      if (response.otp) {
+        setSuccessMessage('Email delivery failed, but your OTP is available below.');
+        setFallbackOtp(response.otp);
+        return;
       }
+      router.push(`/verify-otp?mode=login&email=${encodeURIComponent(email)}`);
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      const message = err.message || 'Unable to send login OTP.';
+      if (message.includes('Email not verified')) {
+        setError('Email is not verified yet. Please complete signup verification.');
+        setUnverifiedEmail(email);
+        router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(email)}`);
+        return;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-xl">
-        <h1 className="text-2xl font-semibold">Sign in to FreelanceHub</h1>
-        
-        {successMessage && (
-          <div className="mt-4 rounded-2xl bg-green-50 border border-green-200 p-4">
-            <p className="text-sm text-green-800">✓ {successMessage}</p>
-          </div>
-        )}
-        
-        {error && (
-          <div className="mt-4 rounded-2xl bg-red-50 border border-red-200 p-4">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-        
-        {!hasSignedUp && !error && (
-          <div className="mt-4 rounded-2xl bg-amber-50 border border-amber-200 p-4">
-            <p className="text-sm text-amber-800">
-              ⚠️ You need to sign up first before you can log in.
+    <main className="min-h-screen px-4 py-8">
+      <section className="page-shell">
+        <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+          <div className="surface-card p-8 md:p-10">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-[#e8f3ff] p-3 text-[#0a66c2]">
+                <KeyRound className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-semibold">Sign in to FreelanceHub</h1>
+                <p className="mt-1 text-sm text-slate-500">Access your hiring, talent, or admin workspace.</p>
+              </div>
+            </div>
+
+            {successMessage && <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">{successMessage}</div>}
+            {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+            {fallbackOtp && (
+              <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                <p>Your OTP code is:</p>
+                <p className="mt-2 rounded-xl bg-white px-4 py-3 font-mono text-left text-sm text-slate-900">{fallbackOtp}</p>
+                <p className="mt-2 text-xs text-slate-500">Use this code on the verify page.</p>
+              </div>
+            )}
+            {unverifiedEmail && (
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                Your email is not verified yet. <a href={`/verify-otp?mode=signup&email=${encodeURIComponent(unverifiedEmail)}`} className="font-semibold text-[#0a66c2] hover:underline">Enter your signup OTP</a>.
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-[#0a66c2] focus:ring-2 focus:ring-[#e8f3ff]"
+                  placeholder="you@example.com"
+                  required
+                  disabled={loading}
+                />
+              </div>
+                <button type="submit" disabled={loading} className="linkedin-button flex w-full gap-2 disabled:cursor-not-allowed disabled:opacity-50">
+                {loading ? 'Sending code...' : 'Sign in'}
+                {!loading && <ArrowRight className="h-4 w-4" />}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className="font-semibold text-[#0a66c2] hover:underline">
+                Sign up
+              </Link>
             </p>
           </div>
-        )}
-        
-        <form onSubmit={handleLogin} className="mt-6 space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
-            <input 
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-2xl border border-black/10 px-4 py-3" 
-              placeholder="you@example.com"
-              required
-              disabled={loading}
-            />
+
+          <div className="surface-subtle p-8 md:p-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#0a66c2]">Single network, three workspaces</p>
+            <h2 className="headline-balance mt-4 text-4xl font-semibold leading-tight">
+              Recruit, apply, and manage the platform from one consistent interface.
+            </h2>
+            <div className="mt-8 space-y-4">
+              {[
+                'Clients get a jobs feed, candidate review pipeline, and messaging controls.',
+                'Developers see job discovery, application tracking, and profile visibility tools.',
+                'Admins enter an operations console for analytics, moderation, and support.',
+              ].map((item) => (
+                <div key={item} className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-[#e8f3ff] p-3 text-[#0a66c2]">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <p className="text-sm leading-7 text-slate-600">{item}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Password</label>
-            <input 
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-2xl border border-black/10 px-4 py-3" 
-              placeholder="••••••••"
-              required
-              disabled={loading}
-            />
-          </div>
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-ink px-5 py-3 font-semibold text-white hover:bg-ink/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Signing in...' : 'Login'}
-          </button>
-        </form>
-        
-        <p className="mt-6 text-center text-sm text-slate/70">
-          Don't have an account?{' '}
-          <Link href="/signup" className="font-semibold text-ember hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<main className="flex min-h-screen items-center justify-center p-6" />}>
+    <Suspense fallback={<main className="min-h-screen" />}>
       <LoginPageContent />
     </Suspense>
   );

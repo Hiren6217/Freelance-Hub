@@ -26,6 +26,18 @@ public class User {
     
     @Column(nullable = false)
     private String password;
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(name = "otp_code", length = 16)
+    private String otpCode;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
+    @Column(name = "otp_purpose", length = 30)
+    private String otpPurpose;
     
     @Column(nullable = false, length = 30)
     private String role = "FREELANCER";

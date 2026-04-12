@@ -36,6 +36,36 @@ export async function signup(name: string, email: string, password: string, role
   }, 'Signup failed');
 }
 
+export async function verifySignupOtp(email: string, code: string) {
+  return requestJson(`${API_BASE_URL}/auth/verify-signup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, code }),
+  }, 'OTP verification failed');
+}
+
+export async function requestLoginOtp(email: string) {
+  return requestJson(`${API_BASE_URL}/auth/request-login-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  }, 'Failed to request login OTP');
+}
+
+export async function verifyLoginOtp(email: string, code: string) {
+  return requestJson(`${API_BASE_URL}/auth/verify-login-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, code }),
+  }, 'OTP verification failed');
+}
+
 export async function login(email: string, password: string) {
   return requestJson(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -72,6 +102,15 @@ export async function getJobs() {
       'Content-Type': 'application/json',
     },
   }, 'Failed to fetch jobs');
+}
+
+export async function getJobsByRecruiter(recruiterId: number) {
+  return requestJson(`${API_BASE_URL}/jobs/recruiter/${recruiterId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, 'Failed to fetch recruiter jobs');
 }
 
 export async function getJobById(id: number) {
@@ -112,6 +151,15 @@ export async function getJobApplications(jobId: number) {
   }, 'Failed to fetch job applications');
 }
 
+export async function getRecruiterApplications(recruiterId: number) {
+  return requestJson(`${API_BASE_URL}/applications/recruiter/${recruiterId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, 'Failed to fetch recruiter applications');
+}
+
 export async function updateApplicationStatus(applicationId: number, status: string) {
   return requestJson(`${API_BASE_URL}/applications/${applicationId}/status`, {
     method: 'PUT',
@@ -120,4 +168,32 @@ export async function updateApplicationStatus(applicationId: number, status: str
     },
     body: JSON.stringify({ status }),
   }, 'Failed to update application status');
+}
+
+export async function getNotifications(userId: number) {
+  return requestJson(`${API_BASE_URL}/notifications/user/${userId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, 'Failed to fetch notifications');
+}
+
+export async function getMessages(receiverId: number) {
+  return requestJson(`${API_BASE_URL}/messages/receiver/${receiverId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }, 'Failed to fetch messages');
+}
+
+export async function sendMessage(senderId: number, receiverId: number, content: string) {
+  return requestJson(`${API_BASE_URL}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ senderId, receiverId, content }),
+  }, 'Failed to send message');
 }

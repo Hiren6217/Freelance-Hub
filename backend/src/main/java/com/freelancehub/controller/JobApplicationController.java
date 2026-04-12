@@ -1,8 +1,12 @@
 package com.freelancehub.controller;
 
 import com.freelancehub.model.JobApplication;
+import com.freelancehub.model.Message;
+import com.freelancehub.model.Notification;
 import com.freelancehub.repository.JobApplicationRepository;
 import com.freelancehub.repository.JobRepository;
+import com.freelancehub.repository.MessageRepository;
+import com.freelancehub.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +26,12 @@ public class JobApplicationController {
 
     @Autowired
     private JobRepository jobRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
 
     // Apply for a job
     @PostMapping
@@ -109,8 +119,12 @@ public class JobApplicationController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
             }
 
+            String previousStatus = application.getStatus();
             application.setStatus(newStatus);
             JobApplication updatedApplication = applicationRepository.save(application);
+
+            createStatusNotification(updatedApplication, previousStatus, newStatus);
+            createStatusMessage(updatedApplication, previousStatus, newStatus);
             
             return ResponseEntity.ok(updatedApplication);
         } catch (Exception e) {
@@ -136,6 +150,70 @@ public class JobApplicationController {
         } catch (Exception e) {
             response.put("error", "Failed to delete application: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    private void createStatusNotification(JobApplication application, String previousStatus, String newStatus) {
+        if (newStatus.equals(previousStatus)) {
+            return;
+        }
+
+        Notification notification = new Notification();
+        notification.setUserId(application.getApplicantId());
+        notification.setType("APPLICATION_" + newStatus);
+        notification.setTitle(getNotificationTitle(newStatus));
+        notification.setBody(getNotificationBody(application, newStatus));
+        notificationRepository.save(notification);
+    }
+
+    private void createStatusMessage(JobApplication application, String previousStatus, String newStatus) {
+        if (newStatus.equals(previousStatus)) {
+            return;
+        }
+
+        Message message = new Message();
+        message.setSenderId(application.getRecruiterId());
+        message.setReceiverId(application.getApplicantId());
+        message.setContent(getStatusMessageBody(application, newStatus));
+        messageRepository.save(message);
+    }
+
+    private String getNotificationTitle(String status) {
+        switch (status) {
+            case "ACCEPTED":
+                return "Application approved";
+            case "REJECTED":
+                return "Application rejected";
+            case "REVIEWED":
+                return "Application reviewed";
+            default:
+                return "Application updated";
+        }
+    }
+
+    private String getNotificationBody(JobApplication application, String status) {
+        switch (status) {
+            case "ACCEPTED":
+                return "Your application #" + application.getId() + " has been approved by the client.";
+            case "REJECTED":
+                return "Your application #" + application.getId() + " was not selected by the client.";
+            case "REVIEWED":
+                return "Your application #" + application.getId() + " is now under review.";
+            default:
+                return "Your application #" + application.getId() + " status changed to " + status + ".";
+        }
+    }
+
+    private String getStatusMessageBody(JobApplication application, String status) {
+        switch (status) {
+            case "ACCEPTED":
+                return "Your application #" + application.getId() + " has been approved. We will contact you with the next steps soon.";
+            case "REJECTED":
+                return "Your application #" + application.getId() + " was not selected. Thank you for applying.";
+            case "REVIEWED":
+                return "Your application #" + application.getId() + " has been reviewed. We may contact you for the next stage.";
+            default:
+                return "Your application #" + application.getId() + " status changed to " + status + ".";
         }
     }
 }

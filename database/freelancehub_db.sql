@@ -7,6 +7,10 @@ CREATE TABLE users (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(160) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    otp_code VARCHAR(16),
+    otp_expiry TIMESTAMP NULL,
+    otp_purpose VARCHAR(30),
     role VARCHAR(30) NOT NULL,
     referral_score INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
