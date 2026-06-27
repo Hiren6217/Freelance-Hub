@@ -48,18 +48,19 @@ export default function SignupPage() {
     setFallbackOtp('');
 
     try {
-      const response: any = await signup(formData.name, formData.email, formData.password, formData.role);
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      const response: any = await signup(formData.name, normalizedEmail, formData.password, formData.role);
       localStorage.setItem('hasSignedUp', 'true');
-      localStorage.setItem('userEmail', formData.email);
+      localStorage.setItem('userEmail', normalizedEmail);
       localStorage.setItem('userRole', formData.role);
       if (response.otp) {
         localStorage.setItem('pendingOtp', response.otp);
       } else {
         localStorage.removeItem('pendingOtp');
       }
-      localStorage.setItem('pendingEmail', formData.email);
+      localStorage.setItem('pendingEmail', normalizedEmail);
       const otpQuery = response.otp ? `&otp=${encodeURIComponent(response.otp)}` : '';
-      router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(formData.email)}${otpQuery}`);
+      router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(normalizedEmail)}${otpQuery}`);
     } catch (err: any) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {

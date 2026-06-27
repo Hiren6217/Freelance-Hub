@@ -18,6 +18,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { getApplicantApplications, getJobs, getMessages, getNotifications } from '@/lib/api';
+import ResumeUpload from '@/app/components/ResumeUpload';
+import JobMatch from '@/app/components/JobMatch';
 
 export default function DeveloperDashboard() {
   const router = useRouter();
@@ -32,6 +34,7 @@ export default function DeveloperDashboard() {
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState('applications');
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -118,7 +121,9 @@ export default function DeveloperDashboard() {
       <div className="page-shell">
         <header className="surface-card flex flex-wrap items-center justify-between gap-4 px-5 py-4">
           <div className="flex items-center gap-3">
-            <img src="/freelancehub-logo.svg" alt="FreelanceHub" className="h-12 w-12 rounded-2xl" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f3ff] text-base font-semibold text-[#0a66c2]">
+              FH
+            </div>
             <div>
               <h1 className="text-xl font-semibold">FreelanceHub Talent</h1>
               <p className="text-sm text-slate-500">Professional network dashboard</p>
@@ -170,31 +175,61 @@ export default function DeveloperDashboard() {
             </div>
 
             <div className="surface-card p-6">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-semibold">My applications</h3>
-                  <p className="text-sm text-slate-500">Track each job you applied to and current hiring status.</p>
+              <div className="mb-5">
+                <div className="flex space-x-4 border-b">
+                  <button
+                    onClick={() => setActiveTab('applications')}
+                    className={`py-2 px-4 ${activeTab === 'applications' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
+                  >
+                    My Applications
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('resume')}
+                    className={`py-2 px-4 ${activeTab === 'resume' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
+                  >
+                    Resume Upload
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('matches')}
+                    className={`py-2 px-4 ${activeTab === 'matches' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
+                  >
+                    Job Matches
+                  </button>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">{applications.length} submitted</span>
               </div>
 
-              <div className="space-y-4">
-                {loading ? <p className="text-sm text-slate-500">Loading applications...</p> : applications.length === 0 ? <div className="rounded-[1.5rem] bg-slate-50 p-6 text-sm text-slate-600">You have not applied to any jobs yet. Start with the browse jobs page.</div> : applications.map((app: any) => (
-                  <article key={app.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-lg font-semibold">Application #{app.id}</h4>
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(app.status)}`}>{app.status}</span>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500">Job ID {app.jobId} · Recruiter ID {app.recruiterId}</p>
-                      </div>
-                      <button onClick={() => { setSelectedApplication(app); setShowDetailsModal(true); }} className="linkedin-button"><span className="inline-flex items-center gap-2"><Eye className="h-4 w-4" />Details</span></button>
+              {activeTab === 'applications' && (
+                <>
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-semibold">My applications</h3>
+                      <p className="text-sm text-slate-500">Track each job you applied to and current hiring status.</p>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{app.coverLetter || 'No cover letter was attached to this application.'}</p>
-                  </article>
-                ))}
-              </div>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">{applications.length} submitted</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {loading ? <p className="text-sm text-slate-500">Loading applications...</p> : applications.length === 0 ? <div className="rounded-[1.5rem] bg-slate-50 p-6 text-sm text-slate-600">You have not applied to any jobs yet. Start with the browse jobs page.</div> : applications.map((app: any) => (
+                      <article key={app.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-lg font-semibold">Application #{app.id}</h4>
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(app.status)}`}>{app.status}</span>
+                            </div>
+                            <p className="mt-1 text-sm text-slate-500">Job ID {app.jobId} · Recruiter ID {app.recruiterId}</p>
+                          </div>
+                          <button onClick={() => { setSelectedApplication(app); setShowDetailsModal(true); }} className="linkedin-button"><span className="inline-flex items-center gap-2"><Eye className="h-4 w-4" />Details</span></button>
+                        </div>
+                        <p className="mt-3 text-sm leading-6 text-slate-600">{app.coverLetter || 'No cover letter was attached to this application.'}</p>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'resume' && <ResumeUpload />}
+              {activeTab === 'matches' && <JobMatch />}
             </div>
           </section>
 

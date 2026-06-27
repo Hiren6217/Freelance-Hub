@@ -1,11 +1,13 @@
 package com.freelancehub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "jobs")
@@ -37,13 +39,22 @@ public class Job {
     private String description;
     
     @Column(columnDefinition = "TEXT")
-    private String skills;
+    private String skills; // Keep for backward compatibility or display
     
     @Column(name = "referral_bonus", length = 80)
     private String referralBonus;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+        name = "job_skills",
+        joinColumns = @JoinColumn(name = "job_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private Set<Skill> skillSet;
     
     @PrePersist
     protected void onCreate() {

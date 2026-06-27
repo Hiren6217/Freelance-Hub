@@ -1,4 +1,9 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const rawApiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const cleanedApiBaseUrl = rawApiBaseUrl.replace(/\/+$|\s+/g, '');
+export const API_BASE_URL = cleanedApiBaseUrl.endsWith('/api') ? cleanedApiBaseUrl : `${cleanedApiBaseUrl}/api`;
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizeCode = (code: string) => code.trim();
 
 async function requestJson(url: string, options: RequestInit, fallbackMessage: string) {
   let response: Response;
@@ -27,12 +32,13 @@ async function requestJson(url: string, options: RequestInit, fallbackMessage: s
 }
 
 export async function signup(name: string, email: string, password: string, role: string) {
+  const normalizedEmail = normalizeEmail(email);
   return requestJson(`${API_BASE_URL}/auth/signup`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name, email, password, role }),
+    body: JSON.stringify({ name, email: normalizedEmail, password, role }),
   }, 'Signup failed');
 }
 
@@ -42,7 +48,7 @@ export async function verifySignupOtp(email: string, code: string) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, code }),
+    body: JSON.stringify({ email: normalizeEmail(email), code: normalizeCode(code) }),
   }, 'OTP verification failed');
 }
 
@@ -52,7 +58,7 @@ export async function requestLoginOtp(email: string) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email: normalizeEmail(email) }),
   }, 'Failed to request login OTP');
 }
 
@@ -62,7 +68,7 @@ export async function verifyLoginOtp(email: string, code: string) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, code }),
+    body: JSON.stringify({ email: normalizeEmail(email), code: normalizeCode(code) }),
   }, 'OTP verification failed');
 }
 

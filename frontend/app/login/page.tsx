@@ -36,21 +36,26 @@ function LoginPageContent() {
     setLoading(true);
 
     try {
-      const response: any = await requestLoginOtp(email);
+      const normalizedEmail = email.trim().toLowerCase();
+      const response: any = await requestLoginOtp(normalizedEmail);
       if (response.otp) {
         localStorage.setItem('pendingOtp', response.otp);
+        setFallbackOtp(response.otp);
       } else {
         localStorage.removeItem('pendingOtp');
       }
-      localStorage.setItem('pendingEmail', email);
+      localStorage.setItem('pendingEmail', normalizedEmail);
       const otpQuery = response.otp ? `&otp=${encodeURIComponent(response.otp)}` : '';
-      router.push(`/verify-otp?mode=login&email=${encodeURIComponent(email)}${otpQuery}`);
+      setTimeout(() => {
+        router.push(`/verify-otp?mode=login&email=${encodeURIComponent(normalizedEmail)}${otpQuery}`);
+      }, 2000); // Delay to show OTP
     } catch (err: any) {
       const message = err.message || 'Unable to send login OTP.';
       if (message.includes('Email not verified')) {
+        const normalizedEmail = email.trim().toLowerCase();
         setError('Email is not verified yet. Please complete signup verification.');
-        setUnverifiedEmail(email);
-        router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(email)}`);
+        setUnverifiedEmail(normalizedEmail);
+        router.push(`/verify-otp?mode=signup&email=${encodeURIComponent(normalizedEmail)}`);
         return;
       }
       setError(message);

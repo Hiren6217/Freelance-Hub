@@ -1,15 +1,23 @@
 package com.freelancehub.controller;
 
+import com.freelancehub.dto.JobMatchResponse;
 import com.freelancehub.model.Job;
+import com.freelancehub.model.Skill;
+import com.freelancehub.model.User;
 import com.freelancehub.repository.JobRepository;
+import com.freelancehub.repository.SkillRepository;
+import com.freelancehub.repository.UserRepository;
+import com.freelancehub.service.JobMatchingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -19,10 +27,19 @@ public class JobController {
     @Autowired
     private JobRepository jobRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private JobMatchingService jobMatchingService;
+
+    @Autowired
+    private SkillRepository skillRepository;
+
     // Get all jobs (for developers to browse)
     @GetMapping
     public ResponseEntity<?> getAllJobs() {
-        List<Job> jobs = jobRepository.findByOrderByCreatedAtDesc();
+        List<Job> jobs = jobRepository.findAllWithSkills();
         return ResponseEntity.ok(jobs);
     }
 
@@ -56,6 +73,23 @@ public class JobController {
         if (job.getRecruiterId() == null) {
             response.put("error", "Recruiter ID is required");
             return ResponseEntity.badRequest().body(response);
+        }
+
+        // Link skills to the job
+        if (job.getSkills() != null && !job.getSkills().isEmpty()) {
+            Set<Skill> jobSkills = new HashSet<>();
+            String[] skillNames = job.getSkills().split(",");
+            for (String skillName : skillNames) {
+                // Normalize to lowercase for consistency
+                String normalizedName = skillName.trim().toLowerCase();
+                Skill skill = skillRepository.findByNameIgnoreCase(normalizedName)
+                    .orElse(new Skill(normalizedName, null));
+                if (skill.getId() == null) {
+                    skill = skillRepository.save(skill);
+                }
+                jobSkills.add(skill);
+            }
+            job.setSkillSet(jobSkills);
         }
 
         Job savedJob = jobRepository.save(job);
@@ -99,5 +133,39 @@ public class JobController {
     public ResponseEntity<?> getJobsByRecruiter(@PathVariable Long recruiterId) {
         List<Job> jobs = jobRepository.findByRecruiterIdOrderByCreatedAtDesc(recruiterId);
         return ResponseEntity.ok(jobs);
+    }
+
+    // Get matched jobs for the current user
+    @GetMapping("/match")
+    public ResponseEntity<?> getMatchedJobs(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = extractUserIdFromToken(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not authenticated"));
+        }
+
+        User user = userRepository.findByIdWithSkills(userId).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
+        }
+
+        List<JobMatchResponse> matches = jobMatchingService.getMatchedJobs(user);
+        return ResponseEntity.ok(matches);
+    }
+
+    private Long extractUserIdFromToken(String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            try {
+                String token = authHeader.substring(7); // Remove "Bearer " prefix
+                if (token.startsWith("token_")) {
+                    String[] parts = token.split("_");
+                    if (parts.length >= 2) {
+                        return Long.parseLong(parts[1]);
+                    }
+                }
+            } catch (Exception e) {
+                // Invalid token format
+            }
+        }
+        return null;
     }
 }

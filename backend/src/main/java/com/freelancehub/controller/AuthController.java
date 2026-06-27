@@ -42,11 +42,34 @@ public class AuthController {
         return String.valueOf(code);
     }
 
+    private static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
+    private static String normalizeCode(String code) {
+        return code == null ? null : code.trim();
+    }
+
     private User saveOtp(User user, String purpose) {
         user.setOtpCode(generateOtpCode());
         user.setOtpExpiry(LocalDateTime.now().plus(OTP_EXPIRY_MINUTES, ChronoUnit.MINUTES));
         user.setOtpPurpose(purpose);
         return userRepository.save(user);
+    }
+
+    private boolean hasValidOtp(User user, String purpose) {
+        return user.getOtpCode() != null
+                && user.getOtpExpiry() != null
+                && user.getOtpPurpose() != null
+                && user.getOtpPurpose().equals(purpose)
+                && user.getOtpExpiry().isAfter(LocalDateTime.now());
+    }
+
+    private User getOrCreateOtp(User user, String purpose) {
+        if (hasValidOtp(user, purpose)) {
+            return user;
+        }
+        return saveOtp(user, purpose);
     }
 
     private boolean sendOtpEmail(User user, String purpose) {
@@ -63,7 +86,8 @@ public class AuthController {
     public ResponseEntity<?> signup(@RequestBody SignupRequest signupRequest) {
         Map<String, String> response = new HashMap<>();
 
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
+        String email = normalizeEmail(signupRequest.getEmail());
+        if (userRepository.existsByEmail(email)) {
             response.put("error", "Email already registered");
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
@@ -75,7 +99,7 @@ public class AuthController {
 
         User user = new User();
         user.setName(signupRequest.getName());
-        user.setEmail(signupRequest.getEmail());
+        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
         user.setRole(role);
         user.setReferralScore(0);
@@ -99,7 +123,8 @@ public class AuthController {
     public ResponseEntity<?> verifySignup(@RequestBody OtpVerifyRequest request) {
         Map<String, Object> response = new HashMap<>();
 
-        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+        String email = normalizeEmail(request.getEmail());
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
             response.put("error", "User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
@@ -119,7 +144,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        if (!user.getOtpCode().equals(request.getCode())) {
+        if (!user.getOtpCode().equals(normalizeCode(request.getCode()))) {
             response.put("error", "Invalid OTP code");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
@@ -139,7 +164,8 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         Map<String, String> response = new HashMap<>();
 
-        Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
+        String email = normalizeEmail(loginRequest.getEmail());
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
             response.put("error", "Invalid email or password");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
@@ -175,7 +201,8 @@ public class AuthController {
     public ResponseEntity<?> requestLoginOtp(@RequestBody OtpRequest request) {
         Map<String, String> response = new HashMap<>();
 
-        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+        String email = normalizeEmail(request.getEmail());
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
             response.put("error", "User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
@@ -187,7 +214,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
 
-        user = saveOtp(user, "LOGIN");
+        user = getOrCreateOtp(user, "LOGIN");
         boolean emailSent = sendOtpEmail(user, "login");
         response.put("message", "A login OTP has been sent to your email.");
         response.put("emailSent", Boolean.toString(emailSent));
@@ -202,7 +229,8 @@ public class AuthController {
     public ResponseEntity<?> verifyLoginOtp(@RequestBody OtpVerifyRequest request) {
         Map<String, Object> response = new HashMap<>();
 
-        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+        String email = normalizeEmail(request.getEmail());
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
             response.put("error", "User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
@@ -222,7 +250,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        if (!user.getOtpCode().equals(request.getCode())) {
+        if (!user.getOtpCode().equals(normalizeCode(request.getCode()))) {
             response.put("error", "Invalid OTP code");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }

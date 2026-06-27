@@ -116,3 +116,42 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+-- Skills table for normalized skills
+CREATE TABLE skills (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    category VARCHAR(50)
+);
+
+-- Job skills junction table
+CREATE TABLE job_skills (
+    job_id BIGINT NOT NULL,
+    skill_id BIGINT NOT NULL,
+    required_level VARCHAR(20), -- e.g., beginner, intermediate, expert
+    PRIMARY KEY (job_id, skill_id),
+    CONSTRAINT fk_job_skills_job FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_job_skills_skill FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE
+);
+
+-- User skills junction table
+CREATE TABLE user_skills (
+    user_id BIGINT NOT NULL,
+    skill_id BIGINT NOT NULL,
+    proficiency_level VARCHAR(20), -- e.g., beginner, intermediate, expert
+    years_of_experience INT,
+    PRIMARY KEY (user_id, skill_id),
+    CONSTRAINT fk_user_skills_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_skills_skill FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE
+);
+
+-- Resumes table for uploaded resumes
+CREATE TABLE resumes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500),
+    parsed_data JSON,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_resumes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

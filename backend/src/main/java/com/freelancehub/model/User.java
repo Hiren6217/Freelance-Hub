@@ -1,11 +1,13 @@
 package com.freelancehub.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -47,6 +49,15 @@ public class User {
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+        name = "user_skills",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
+    private Set<Skill> skills;
     
     @PrePersist
     protected void onCreate() {

@@ -35,11 +35,13 @@ export default function VerifyOtpPageContent() {
 
     if (queryOtp) {
       setPendingOtp(queryOtp);
+      setCode(queryOtp);
       localStorage.setItem('pendingOtp', queryOtp);
     } else {
       const otp = localStorage.getItem('pendingOtp');
       if (otp) {
         setPendingOtp(otp);
+        setCode(otp);
       }
     }
   }, [searchParams]);
@@ -49,7 +51,10 @@ export default function VerifyOtpPageContent() {
     setError('');
     setMessage('');
 
-    if (!email || !code) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = code.trim();
+
+    if (!normalizedEmail || !normalizedCode) {
       setError('Please provide your email and OTP code.');
       return;
     }
@@ -58,7 +63,7 @@ export default function VerifyOtpPageContent() {
 
     try {
       if (mode === 'signup') {
-        const response = await verifySignupOtp(email, code);
+        const response = await verifySignupOtp(normalizedEmail, normalizedCode);
         localStorage.removeItem('pendingOtp');
         setMessage(response.message || 'Email verified successfully.');
         setTimeout(() => router.push('/login'), 1500);
@@ -66,7 +71,7 @@ export default function VerifyOtpPageContent() {
       }
 
       if (mode === 'login') {
-        const response = await verifyLoginOtp(email, code);
+        const response = await verifyLoginOtp(normalizedEmail, normalizedCode);
         localStorage.removeItem('pendingOtp');
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('userId', response.userId.toString());

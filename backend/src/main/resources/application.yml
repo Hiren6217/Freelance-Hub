@@ -1,12 +1,27 @@
 server:
   port: 8080
 
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
+
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/freelancehub_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    url: jdbc:mysql://localhost:3306/freelancehub_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
+    username: root
+    password: root
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:25}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_STARTTLS_ENABLE:false}
   jpa:
     hibernate:
       ddl-auto: update
@@ -15,19 +30,3 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-  mail:
-    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
-    port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:your-email@example.com}
-    password: ${SPRING_MAIL_PASSWORD:your-email-password}
-    default-encoding: UTF-8
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls.enable: true
-          starttls.required: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-          from: ${SPRING_MAIL_FROM:${SPRING_MAIL_USERNAME:your-email@example.com}}
