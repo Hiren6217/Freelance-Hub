@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import GlobalHeader from "./components/GlobalHeader";
+import Footer from "./components/Footer";
 
 export const metadata: Metadata = {
   title: "FreelanceHub",
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <GlobalHeader />
         {children}
+        <Footer />
       </body>
     </html>
   );
