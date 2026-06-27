@@ -15,7 +15,8 @@ export default function Footer() {
                 alt="FreelanceHub"
                 width={400}
                 height={110}
-                className="w-[150px] h-[40px] md:w-[200px] md:h-[55px] object-contain"
+                sizes="(max-width: 768px) 160px, 220px"
+                className="w-[160px] h-[45px] md:w-[220px] md:h-[60px] object-contain"
               />
             </Link>
 
@@ -25,32 +26,32 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn"
-                className="inline-flex items-center justify-center rounded-full p-2 text-[#0A66C2] transition hover:bg-[#0A66C2] hover:text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-[#0A66C2] transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-[#0A66C2] hover:text-white hover:shadow-lg"
               >
-                <Linkedin size={24} />
+                <Linkedin size={20} />
               </Link>
               <Link
                 href="https://www.instagram.com/freelancehub"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="inline-flex items-center justify-center rounded-full p-2 text-[#E4405F] transition hover:bg-[#E4405F] hover:text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-[#E4405F] transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-[#E4405F] hover:text-white hover:shadow-lg"
               >
-                <Instagram size={24} />
+                <Instagram size={20} />
               </Link>
               <Link
                 href="https://wa.me/1234567890"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp"
-                className="inline-flex items-center justify-center rounded-full p-2 bg-[#25D366] transition hover:bg-[#1fa84f]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-[#1fa84f] hover:shadow-lg"
               >
                 <Image
                   src="/WhatsApp-Logo.wine.svg"
                   alt="WhatsApp"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5"
                 />
               </Link>
             </div>

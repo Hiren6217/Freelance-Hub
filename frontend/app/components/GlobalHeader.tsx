@@ -46,8 +46,8 @@ export default function GlobalHeader() {
             alt="FreelanceHub"
             width={400}
             height={110}
-            style={{ width: '280px', height: '76px', objectFit: 'contain' }}
-            className="w-[280px] h-[76px] md:w-[400px] md:h-[110px]"
+            sizes="(max-width: 768px) 220px, 280px"
+            className="w-[220px] h-[60px] md:w-[280px] md:h-[76px] object-contain"
           />
         </Link>
 
