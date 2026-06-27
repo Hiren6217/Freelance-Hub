@@ -60,7 +60,6 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} FreelanceHub. All rights reserved.
           </div>
         </div>
-      </div>
     </footer>
   );
 }
