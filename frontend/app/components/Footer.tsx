@@ -8,21 +8,22 @@ export default function Footer() {
   return (
     <footer className="border-t border-slate-200 bg-slate-50 py-3">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="flex flex-col items-center gap-3">
-          {/* Logo section */}
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/Logo.png"
-              alt="FreelanceHub"
-              width={400}
-              height={110}
-              style={{ width: '150px', height: '40px', objectFit: 'contain' }}
-              className="w-[150px] h-[40px] md:w-[200px] md:h-[55px]"
-            />
-          </Link>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col items-center gap-4 md:flex-row md:items-center">
+            {/* Logo section */}
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/Logo.png"
+                alt="FreelanceHub"
+                width={400}
+                height={110}
+                style={{ width: '150px', height: '40px', objectFit: 'contain' }}
+                className="w-[150px] h-[40px] md:w-[200px] md:h-[55px]"
+              />
+            </Link>
 
-          {/* Social media links with brand colors */}
-          <div className="flex items-center gap-4">
+            {/* Social media links with brand colors */}
+            <div className="flex items-center gap-4">
             <Link
               href="https://www.linkedin.com/company/freelancehub"
               target="_blank"
@@ -65,7 +66,7 @@ export default function Footer() {
           </div>
 
           {/* Copyright */}
-          <div className="text-center">
+          <div className="text-center md:text-right">
             <p className="text-xs text-slate-600">
               &copy; {new Date().getFullYear()} FreelanceHub. All rights reserved.
             </p>
