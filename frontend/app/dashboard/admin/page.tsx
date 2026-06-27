@@ -61,24 +61,6 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen py-6">
       <div className="page-shell">
-        <section className="surface-card mt-6 flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f3ff] text-base font-semibold text-[#0a66c2]">
-              FH
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold">FreelanceHub Admin</h1>
-              <p className="text-sm text-slate-500">LinkedIn-style operations console</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="rounded-full bg-[#e8f3ff] px-4 py-2 text-sm font-semibold text-[#0a66c2]">{userName}</span>
-            <Link href="/" className="linkedin-button-secondary">
-              Home
-            </Link>
-          </div>
-        </section>
-
         <section className="surface-subtle mt-6 px-6 py-8">
           <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
             <div>

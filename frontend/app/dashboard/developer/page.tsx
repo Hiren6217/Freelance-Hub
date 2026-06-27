@@ -119,29 +119,6 @@ export default function DeveloperDashboard() {
   return (
     <main className="min-h-screen py-6">
       <div className="page-shell">
-        <header className="surface-card flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f3ff] text-base font-semibold text-[#0a66c2]">
-              FH
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold">FreelanceHub Talent</h1>
-              <p className="text-sm text-slate-500">Professional network dashboard</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold">{userName}</p>
-              <p className="text-xs text-slate-500">{userEmail}</p>
-            </div>
-            <button onClick={handleRefresh} className="linkedin-button-secondary inline-flex gap-2">
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-            <button onClick={handleLogout} className="linkedin-button-secondary">Logout</button>
-          </div>
-        </header>
-
         <section className="feed-grid mt-6">
           <aside className="space-y-6">
             <div className="surface-card p-5">
