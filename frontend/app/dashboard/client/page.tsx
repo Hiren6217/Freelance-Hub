@@ -6,16 +6,36 @@ import { useRouter } from 'next/navigation';
 import {
   BriefcaseBusiness,
   Calendar,
+  CalendarPlus,
   CheckCircle2,
   Clock3,
+  ExternalLink,
+  FileSignature,
   Mail,
   MapPin,
   MessageSquareText,
   PlusCircle,
+  Receipt,
   Search,
+  Video,
   XCircle,
 } from 'lucide-react';
-import { getJobsByRecruiter, getRecruiterApplications, sendMessage, updateApplicationStatus } from '@/lib/api';
+import {
+  billingUnitLabel,
+  computeFeeBreakdown,
+  createContract,
+  createInterview,
+  getClientContracts,
+  getClientInterviews,
+  getJobsByRecruiter,
+  getRecruiterApplications,
+  googleCalendarUrl,
+  GOOGLE_MEET_NEW_URL,
+  updateApplicationStatus,
+  updateInterviewStatus,
+  type BillingType,
+} from '@/lib/api';
+import ChatThread from '@/app/components/ChatThread';
 
 export default function ClientDashboard() {
   const router = useRouter();
@@ -27,10 +47,17 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [showActionModal, setShowActionModal] = useState(false);
-  const [messageText, setMessageText] = useState('');
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTime, setInterviewTime] = useState('');
+  const [meetingLink, setMeetingLink] = useState('');
+  const [interviewNote, setInterviewNote] = useState('');
+  const [interviews, setInterviews] = useState<any[]>([]);
   const [updating, setUpdating] = useState(false);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [contractBillingType, setContractBillingType] = useState<BillingType>('PROJECT');
+  const [contractAmount, setContractAmount] = useState('');
+  const [contractDescription, setContractDescription] = useState('');
+  const [creatingContract, setCreatingContract] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -58,9 +85,11 @@ export default function ClientDashboard() {
   const fetchDashboardData = async (currentUserId: number) => {
     try {
       setLoading(true);
-      const [jobsData, recruiterApplications] = await Promise.all([
+      const [jobsData, recruiterApplications, contractsData, interviewsData] = await Promise.all([
         getJobsByRecruiter(currentUserId),
         getRecruiterApplications(currentUserId),
+        getClientContracts(currentUserId),
+        getClientInterviews(currentUserId),
       ]);
 
       const jobsById = new Map<number, any>(jobsData.map((job: any) => [Number(job.id), job] as const));
@@ -71,6 +100,8 @@ export default function ClientDashboard() {
 
       setJobs(jobsData);
       setApplications(hydratedApplications);
+      setContracts(contractsData);
+      setInterviews(interviewsData);
     } catch (err) {
       console.error('Failed to fetch client dashboard data:', err);
     } finally {
@@ -124,39 +155,88 @@ export default function ClientDashboard() {
 
   const handleScheduleInterview = async () => {
     if (!selectedApplication || !userId || !interviewDate || !interviewTime) return;
+    if (!meetingLink.trim()) {
+      alert('Add a Google Meet link. Use "Create Meet link" to open Google Meet, then paste the link here.');
+      return;
+    }
 
     try {
       setUpdating(true);
-      const interviewMessage = `Interview scheduled for ${interviewDate} at ${interviewTime}${messageText.trim() ? `\n\n${messageText.trim()}` : ''}`;
+      await createInterview({
+        clientId: userId,
+        developerId: selectedApplication.applicantId,
+        jobId: selectedApplication.jobId,
+        applicationId: selectedApplication.id,
+        title: selectedApplication.jobTitle,
+        meetingLink: meetingLink.trim(),
+        scheduledAt: `${interviewDate}T${interviewTime}`,
+        note: interviewNote.trim() || undefined,
+      });
       await updateApplicationStatus(selectedApplication.id, 'REVIEWED');
-      await sendMessage(userId, selectedApplication.applicantId, interviewMessage);
       await refreshCurrentUserData();
-      setShowActionModal(false);
-      setSelectedApplication(null);
-      setMessageText('');
       setInterviewDate('');
       setInterviewTime('');
-    } catch (err) {
+      setMeetingLink('');
+      setInterviewNote('');
+    } catch (err: any) {
       console.error('Failed to schedule interview:', err);
-      alert('Failed to schedule interview');
+      alert(err?.message || 'Failed to schedule interview');
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!selectedApplication || !userId || !messageText.trim()) return;
-
+  const handleCancelInterview = async (interviewId: number) => {
     try {
       setUpdating(true);
-      await sendMessage(userId, selectedApplication.applicantId, messageText.trim());
-      setShowActionModal(false);
-      setMessageText('');
-    } catch (err) {
-      console.error('Failed to send message:', err);
-      alert('Failed to send message');
+      await updateInterviewStatus(interviewId, 'CANCELLED');
+      await refreshCurrentUserData();
+    } catch (err: any) {
+      console.error('Failed to cancel interview:', err);
+      alert(err?.message || 'Failed to cancel interview');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const getInterviewsForApplication = (applicationId: number) =>
+    interviews.filter((iv) => Number(iv.applicationId) === Number(applicationId));
+
+  const getContractForApplication = (applicationId: number) =>
+    contracts.find((contract) => Number(contract.applicationId) === Number(applicationId));
+
+  const handleCreateContract = async () => {
+    if (!selectedApplication || !userId) return;
+
+    const amount = parseFloat(contractAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Enter a valid contract amount greater than 0.');
+      return;
+    }
+
+    try {
+      setCreatingContract(true);
+      await createContract({
+        jobId: selectedApplication.jobId,
+        clientId: userId,
+        developerId: selectedApplication.applicantId,
+        applicationId: selectedApplication.id,
+        title: selectedApplication.jobTitle,
+        description: contractDescription.trim() || undefined,
+        billingType: contractBillingType,
+        amount,
+      });
+      await refreshCurrentUserData();
+      setShowActionModal(false);
+      setSelectedApplication(null);
+      setContractAmount('');
+      setContractDescription('');
+      setContractBillingType('PROJECT');
+    } catch (err: any) {
+      console.error('Failed to create contract:', err);
+      alert(err?.message || 'Failed to create contract');
+    } finally {
+      setCreatingContract(false);
     }
   };
 
@@ -172,6 +252,7 @@ export default function ClientDashboard() {
               <div className="mt-5 space-y-3 text-sm">
                 <Link href="/dashboard/client/post-job" className="linkedin-button flex w-full gap-2"><PlusCircle className="h-4 w-4" />Post a job</Link>
                 <Link href="/dashboard/client/browse-developers" className="linkedin-button-secondary flex w-full gap-2"><Search className="h-4 w-4" />Browse developers</Link>
+                <Link href="/dashboard/messages" className="linkedin-button-secondary flex w-full gap-2"><MessageSquareText className="h-4 w-4" />Messages</Link>
               </div>
             </div>
 
@@ -242,9 +323,39 @@ export default function ClientDashboard() {
                         </div>
                         <p className="mt-1 text-sm text-slate-500">Applicant #{app.applicantId} · {app.company}</p>
                       </div>
-                      <button onClick={() => { setSelectedApplication(app); setShowActionModal(true); setMessageText(''); }} className="linkedin-button">Manage</button>
+                      <button onClick={() => { setSelectedApplication(app); setShowActionModal(true); setInterviewDate(''); setInterviewTime(''); setMeetingLink(''); setInterviewNote(''); setContractAmount(''); setContractDescription(''); setContractBillingType('PROJECT'); }} className="linkedin-button">Manage</button>
                     </div>
                     <p className="mt-3 text-sm leading-6 text-slate-600">{app.coverLetter || 'No cover letter submitted.'}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="surface-card p-6">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold"><Receipt className="h-5 w-5 text-[#0a66c2]" />Contracts</h3>
+                  <p className="text-sm text-slate-500">Finalized agreements with the 5% platform fee applied.</p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">{contracts.length} total</span>
+              </div>
+              <div className="space-y-4">
+                {loading ? <p className="text-sm text-slate-500">Loading contracts...</p> : contracts.length === 0 ? <div className="rounded-[1.5rem] bg-slate-50 p-6 text-sm text-slate-600">No contracts yet. Accept an applicant and send a final contract from the Manage panel.</div> : contracts.map((contract) => (
+                  <article key={contract.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-lg font-semibold">{contract.title || `Contract #${contract.id}`}</h4>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(contract.status === 'ACTIVE' || contract.status === 'COMPLETED' ? 'ACCEPTED' : contract.status === 'CANCELLED' ? 'REJECTED' : contract.status)}`}>{contract.status}</span>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">Developer #{contract.developerId} · {contract.billingType}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid gap-1 text-sm text-slate-600 sm:grid-cols-3">
+                      <span>Agreed: {contract.currency} {contract.amount}{billingUnitLabel(contract.billingType)}</span>
+                      <span className="text-orange-600">Fee (5%): −{contract.currency} {contract.platformFee}{billingUnitLabel(contract.billingType)}</span>
+                      <span className="font-semibold text-[#0a66c2]">Developer nets: {contract.currency} {contract.developerEarnings}{billingUnitLabel(contract.billingType)}</span>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -289,18 +400,89 @@ export default function ClientDashboard() {
             </div>
 
             <div className="mb-6 border-t border-slate-200 pt-6">
-              <h3 className="mb-4 text-lg font-semibold">Schedule interview</h3>
-              <div className="mb-4 grid gap-4 md:grid-cols-2">
-                <input type="date" value={interviewDate} onChange={(e) => setInterviewDate(e.target.value)} className="rounded-2xl border border-slate-200 px-4 py-3" min={new Date().toISOString().split('T')[0]} />
-                <input type="time" value={interviewTime} onChange={(e) => setInterviewTime(e.target.value)} className="rounded-2xl border border-slate-200 px-4 py-3" />
-              </div>
-              <button onClick={handleScheduleInterview} disabled={updating || !interviewDate || !interviewTime} className="linkedin-button w-full disabled:cursor-not-allowed disabled:opacity-50">Mark reviewed and send interview details</button>
+              <h3 className="mb-1 flex items-center gap-2 text-lg font-semibold"><FileSignature className="h-5 w-5 text-[#0a66c2]" />Final contract</h3>
+              {(() => {
+                const existing = getContractForApplication(selectedApplication.id);
+                if (existing) {
+                  return (
+                    <div className="rounded-2xl bg-slate-50 p-4 text-sm">
+                      <p className="font-semibold text-slate-700">Contract #{existing.id} · {existing.status}</p>
+                      <div className="mt-2 grid gap-1 text-slate-600">
+                        <span>Billing: {existing.billingType}</span>
+                        <span>Agreed: {existing.currency} {existing.amount}{billingUnitLabel(existing.billingType)}</span>
+                        <span>Platform fee (5%): −{existing.currency} {existing.platformFee}{billingUnitLabel(existing.billingType)}</span>
+                        <span className="font-semibold text-[#0a66c2]">Developer receives: {existing.currency} {existing.developerEarnings}{billingUnitLabel(existing.billingType)}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                if (selectedApplication.status !== 'ACCEPTED') {
+                  return <p className="text-sm text-slate-500">Accept the application first to send the final contract.</p>;
+                }
+                const preview = computeFeeBreakdown(parseFloat(contractAmount));
+                const unit = billingUnitLabel(contractBillingType);
+                return (
+                  <div className="space-y-4">
+                    <p className="text-sm text-slate-500">A 5% platform fee is deducted from the developer&apos;s payout when the contract is finalized.</p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <select value={contractBillingType} onChange={(e) => setContractBillingType(e.target.value as BillingType)} className="rounded-2xl border border-slate-200 px-4 py-3">
+                        <option value="PROJECT">Project based (fixed fee)</option>
+                        <option value="HOURLY">Hourly rate</option>
+                        <option value="MONTHLY">Monthly rate</option>
+                      </select>
+                      <input type="number" min="0" step="0.01" value={contractAmount} onChange={(e) => setContractAmount(e.target.value)} className="rounded-2xl border border-slate-200 px-4 py-3" placeholder={contractBillingType === 'PROJECT' ? 'Total project fee (USD)' : `Rate (USD${unit})`} />
+                    </div>
+                    <textarea value={contractDescription} onChange={(e) => setContractDescription(e.target.value)} rows={3} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Scope / terms (optional)" />
+                    <div className="rounded-2xl bg-[#e8f3ff] p-4 text-sm text-slate-700">
+                      <div className="flex items-center justify-between"><span>Agreed amount</span><span className="font-semibold">${preview.amount.toFixed(2)}{unit}</span></div>
+                      <div className="flex items-center justify-between"><span>Platform fee (5%)</span><span className="font-semibold text-orange-600">−${preview.platformFee.toFixed(2)}{unit}</span></div>
+                      <div className="mt-1 flex items-center justify-between border-t border-[#c9e2ff] pt-2"><span>Developer receives</span><span className="font-semibold text-[#0a66c2]">${preview.developerEarnings.toFixed(2)}{unit}</span></div>
+                    </div>
+                    <button onClick={handleCreateContract} disabled={creatingContract || !(parseFloat(contractAmount) > 0)} className="linkedin-button w-full disabled:cursor-not-allowed disabled:opacity-50">{creatingContract ? 'Sending contract…' : 'Send final contract'}</button>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="mb-6 border-t border-slate-200 pt-6">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold"><MessageSquareText className="h-5 w-5 text-[#0a66c2]" />Message applicant</h3>
-              <textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} rows={4} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Write a message..." />
-              <button onClick={handleSendMessage} disabled={updating || !messageText.trim()} className="linkedin-button mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50">Send message</button>
+              <h3 className="mb-1 flex items-center gap-2 text-lg font-semibold"><Video className="h-5 w-5 text-[#0a66c2]" />Schedule Google Meet interview</h3>
+              <p className="mb-4 text-sm text-slate-500">Create a Meet link, pick a time, and the developer is notified with the join link.</p>
+
+              {getInterviewsForApplication(selectedApplication.id).length > 0 && (
+                <div className="mb-4 space-y-2">
+                  {getInterviewsForApplication(selectedApplication.id).map((iv: any) => (
+                    <div key={iv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 p-3 text-sm">
+                      <div>
+                        <p className="font-semibold text-slate-700">{new Date(iv.scheduledAt).toLocaleString()}</p>
+                        <p className="text-xs text-slate-500">Status: {iv.status}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <a href={iv.meetingLink} target="_blank" rel="noopener noreferrer" className="linkedin-button-secondary inline-flex items-center gap-1 text-sm"><Video className="h-4 w-4" />Join</a>
+                        {iv.status === 'SCHEDULED' && <button onClick={() => handleCancelInterview(iv.id)} disabled={updating} className="text-sm font-semibold text-orange-600 disabled:opacity-50">Cancel</button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <a href={GOOGLE_MEET_NEW_URL} target="_blank" rel="noopener noreferrer" className="linkedin-button-secondary inline-flex items-center gap-2 whitespace-nowrap"><ExternalLink className="h-4 w-4" />Create Meet link</a>
+                <input type="url" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} className="min-w-[200px] flex-1 rounded-2xl border border-slate-200 px-4 py-3" placeholder="Paste Google Meet link (https://meet.google.com/...)" />
+              </div>
+              <div className="mb-3 grid gap-4 md:grid-cols-2">
+                <input type="date" value={interviewDate} onChange={(e) => setInterviewDate(e.target.value)} className="rounded-2xl border border-slate-200 px-4 py-3" min={new Date().toISOString().split('T')[0]} />
+                <input type="time" value={interviewTime} onChange={(e) => setInterviewTime(e.target.value)} className="rounded-2xl border border-slate-200 px-4 py-3" />
+              </div>
+              <textarea value={interviewNote} onChange={(e) => setInterviewNote(e.target.value)} rows={2} className="mb-3 w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="Agenda / note for the developer (optional)" />
+              {interviewDate && interviewTime && meetingLink.trim() && (
+                <a href={googleCalendarUrl({ title: `Interview: ${selectedApplication.jobTitle}`, scheduledAt: `${interviewDate}T${interviewTime}`, details: `Google Meet: ${meetingLink.trim()}`, location: meetingLink.trim() })} target="_blank" rel="noopener noreferrer" className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-[#0a66c2]"><CalendarPlus className="h-4 w-4" />Add to Google Calendar</a>
+              )}
+              <button onClick={handleScheduleInterview} disabled={updating || !interviewDate || !interviewTime || !meetingLink.trim()} className="linkedin-button w-full disabled:cursor-not-allowed disabled:opacity-50">Send interview invite &amp; mark reviewed</button>
+            </div>
+
+            <div className="mb-6 border-t border-slate-200 pt-6">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold"><MessageSquareText className="h-5 w-5 text-[#0a66c2]" />Discuss the project</h3>
+              {userId && <ChatThread currentUserId={userId} otherUserId={selectedApplication.applicantId} otherLabel={selectedApplication.applicantName} />}
             </div>
 
             <button onClick={() => setShowActionModal(false)} disabled={updating} className="linkedin-button-secondary w-full">Close</button>

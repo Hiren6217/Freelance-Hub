@@ -155,3 +155,52 @@ CREATE TABLE resumes (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_resumes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Final contracts between a client and a developer.
+-- The platform charges a flat 5% fee deducted from the developer's payout.
+-- `amount` is the agreed value for the billing unit:
+--   HOURLY  -> hourly rate (fee is 5% per hour)
+--   MONTHLY -> monthly rate (fee is 5% per month)
+--   PROJECT -> fixed project fee (fee is 5% of the total)
+-- platform_fee = amount * platform_fee_rate; developer_earnings = amount - platform_fee.
+CREATE TABLE contracts (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    job_id BIGINT NOT NULL,
+    application_id BIGINT,
+    client_id BIGINT NOT NULL,
+    developer_id BIGINT NOT NULL,
+    title VARCHAR(255),
+    description TEXT,
+    billing_type VARCHAR(20) NOT NULL, -- HOURLY, MONTHLY, PROJECT
+    currency VARCHAR(8) NOT NULL DEFAULT 'USD',
+    amount DECIMAL(12,2) NOT NULL,
+    platform_fee_rate DECIMAL(5,4) NOT NULL DEFAULT 0.0500,
+    platform_fee DECIMAL(12,2) NOT NULL,
+    developer_earnings DECIMAL(12,2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- PENDING, ACTIVE, COMPLETED, CANCELLED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT fk_contracts_job FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_contracts_client FOREIGN KEY (client_id) REFERENCES users(id),
+    CONSTRAINT fk_contracts_developer FOREIGN KEY (developer_id) REFERENCES users(id),
+    CONSTRAINT uq_contracts_application UNIQUE (application_id)
+);
+
+-- Google Meet interviews a client schedules with a developer before the final contract.
+-- The meeting link is supplied by the client; the developer is notified with the link and time.
+CREATE TABLE interviews (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    job_id BIGINT,
+    application_id BIGINT,
+    client_id BIGINT NOT NULL,
+    developer_id BIGINT NOT NULL,
+    title VARCHAR(255),
+    meeting_link VARCHAR(512) NOT NULL,
+    scheduled_at DATETIME NOT NULL,
+    note TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED', -- SCHEDULED, CANCELLED, COMPLETED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT fk_interviews_client FOREIGN KEY (client_id) REFERENCES users(id),
+    CONSTRAINT fk_interviews_developer FOREIGN KEY (developer_id) REFERENCES users(id)
+);

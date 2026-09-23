@@ -26,6 +26,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/jobs/**").permitAll()
                 .requestMatchers("/api/applications/**").permitAll()
+                .requestMatchers("/api/contracts/**").permitAll()
+                .requestMatchers("/api/interviews/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/**").permitAll());
         return http.build();

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { MessageCircle } from 'lucide-react';
 
 export default function GlobalHeader() {
   const [open, setOpen] = useState(false);
@@ -54,6 +55,9 @@ export default function GlobalHeader() {
         <div className="hidden md:flex items-center gap-3">
           {isLoggedIn ? (
             <>
+              <Link href="/dashboard/messages" className="linkedin-button-secondary inline-flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />Messages
+              </Link>
               <Link href={getDashboardPath()} className="linkedin-button-secondary">
                 {userName || 'Profile'}
               </Link>
@@ -93,6 +97,9 @@ export default function GlobalHeader() {
         <nav className="flex flex-col gap-2 px-2 pb-3">
           {isLoggedIn ? (
             <>
+              <Link href="/dashboard/messages" onClick={() => setOpen(false)} className="linkedin-button-secondary flex w-full items-center justify-center gap-2">
+                <MessageCircle className="h-4 w-4" />Messages
+              </Link>
               <Link href={getDashboardPath()} onClick={() => setOpen(false)} className="linkedin-button-secondary block text-center w-full">
                 {userName || 'Profile'}
               </Link>
