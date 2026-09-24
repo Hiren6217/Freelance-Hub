@@ -25,7 +25,12 @@ async function requestJson(url: string, options: RequestInit, fallbackMessage: s
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || fallbackMessage);
+    const error: any = new Error(data?.error || data?.message || fallbackMessage);
+    // Attach the parsed body + status so callers can branch on structured payloads
+    // (e.g. a { status: "SUSPENDED", userId } response from the auth endpoints).
+    error.data = data;
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -388,4 +393,100 @@ export async function updateInterviewStatus(interviewId: number, status: string)
     },
     body: JSON.stringify({ status }),
   }, 'Failed to update interview');
+}
+
+// Payment APIs (platform-mediated payments via PayPal)
+
+export type PaymentStatus = 'DUE' | 'PROCESSING' | 'PAID' | 'FAILED';
+export type PaymentType = 'PROJECT' | 'HOURLY';
+
+export interface Payment {
+  id: number;
+  contractId: number;
+  clientId: number;
+  developerId: number;
+  type: PaymentType;
+  timeLogId?: number | null;
+  amount: number;
+  platformFee: number;
+  developerEarnings: number;
+  currency: string;
+  status: PaymentStatus;
+  provider: string;
+  providerOrderId?: string | null;
+  providerCaptureId?: string | null;
+  createdAt?: string;
+  dueAt?: string;
+  paidAt?: string | null;
+}
+
+export interface TimeLog {
+  id: number;
+  contractId: number;
+  developerId: number;
+  clientId: number;
+  hours: number;
+  description?: string | null;
+  workedOn?: string | null;
+  paymentId?: number | null;
+  createdAt?: string;
+}
+
+// Developer logs worked hours on an active HOURLY contract (creates a due payment).
+export async function logHours(payload: {
+  contractId: number;
+  hours?: number;
+  description?: string;
+  workedOn?: string;
+}) {
+  return requestJson(`${API_BASE_URL}/time-logs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, 'Failed to log hours');
+}
+
+export async function getContractTimeLogs(contractId: number) {
+  return requestJson(`${API_BASE_URL}/time-logs/contract/${contractId}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  }, 'Failed to fetch time logs');
+}
+
+// Starts a PayPal order for a due payment; returns { orderId, paymentId, amount, currency }.
+export async function createPaymentOrder(paymentId: number) {
+  return requestJson(`${API_BASE_URL}/payments/${paymentId}/create-order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  }, 'Failed to start payment');
+}
+
+// Captures an approved PayPal order; on success the payment becomes PAID.
+export async function capturePayment(paymentId: number, orderId: string) {
+  return requestJson(`${API_BASE_URL}/payments/${paymentId}/capture`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId }),
+  }, 'Failed to capture payment');
+}
+
+export async function getClientPayments(clientId: number) {
+  return requestJson(`${API_BASE_URL}/payments/client/${clientId}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  }, 'Failed to fetch payments');
+}
+
+export async function getDeveloperPayments(developerId: number) {
+  return requestJson(`${API_BASE_URL}/payments/developer/${developerId}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  }, 'Failed to fetch payments');
+}
+
+export async function getContractPayments(contractId: number) {
+  return requestJson(`${API_BASE_URL}/payments/contract/${contractId}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  }, 'Failed to fetch payments');
 }

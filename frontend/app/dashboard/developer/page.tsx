@@ -33,6 +33,7 @@ import {
 import ResumeUpload from '@/app/components/ResumeUpload';
 import JobMatch from '@/app/components/JobMatch';
 import ChatThread from '@/app/components/ChatThread';
+import HourlyLogPanel from '@/app/components/HourlyLogPanel';
 
 export default function DeveloperDashboard() {
   const router = useRouter();
@@ -277,7 +278,7 @@ export default function DeveloperDashboard() {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="text-lg font-semibold">{contract.title || `Contract #${contract.id}`}</h4>
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(contract.status === 'ACTIVE' ? 'ACCEPTED' : contract.status === 'CANCELLED' ? 'REJECTED' : contract.status)}`}>{contract.status}</span>
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(contract.status === 'ACTIVE' || contract.status === 'COMPLETED' ? 'ACCEPTED' : contract.status === 'CANCELLED' ? 'REJECTED' : contract.status)}`}>{contract.status}</span>
                             </div>
                             <p className="mt-1 text-sm text-slate-500">Client #{contract.clientId} · {contract.billingType}</p>
                           </div>
@@ -294,7 +295,21 @@ export default function DeveloperDashboard() {
                             <button onClick={() => handleContractStatus(contract.id, 'CANCELLED')} disabled={updatingContractId === contract.id} className="rounded-2xl bg-orange-600 px-6 py-3 font-semibold text-white disabled:opacity-50"><span className="inline-flex items-center gap-2"><XCircle className="h-4 w-4" />Decline</span></button>
                           </div>
                         )}
-                        {contract.status === 'ACTIVE' && <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-700"><span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />Contract finalized. Net earnings shown are after the 5% platform fee.</span></div>}
+                        {contract.status === 'ACTIVE' && contract.billingType === 'PROJECT' && (
+                          <div className="mt-4 space-y-3">
+                            <div className="rounded-2xl bg-green-50 p-4 text-sm text-green-700"><span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />Contract finalized. When the work is done, mark it complete so the client can release your payment.</span></div>
+                            <button onClick={() => handleContractStatus(contract.id, 'COMPLETED')} disabled={updatingContractId === contract.id} className="linkedin-button inline-flex items-center gap-2 disabled:opacity-50"><CheckCircle2 className="h-4 w-4" />Mark work complete</button>
+                          </div>
+                        )}
+                        {contract.status === 'ACTIVE' && contract.billingType === 'HOURLY' && (
+                          <HourlyLogPanel contractId={contract.id} currency={contract.currency} rate={contract.amount} />
+                        )}
+                        {contract.status === 'ACTIVE' && contract.billingType === 'MONTHLY' && (
+                          <div className="mt-4 rounded-2xl bg-green-50 p-4 text-sm text-green-700"><span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />Contract finalized. Net earnings shown are after the 5% platform fee.</span></div>
+                        )}
+                        {contract.status === 'COMPLETED' && (
+                          <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-blue-700"><span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />Work marked complete. Awaiting the client to release payment through the platform.</span></div>
+                        )}
                       </article>
                     ))}
                   </div>

@@ -43,7 +43,18 @@ public class User {
     
     @Column(nullable = false, length = 30)
     private String role = "FREELANCER";
-    
+
+    // Account access state. SUSPENDED clients are blocked from logging in until
+    // their outstanding platform payments are cleared. See PaymentEnforcementService.
+    @Column(name = "account_status", nullable = false, length = 20)
+    private String accountStatus = "ACTIVE";
+
+    @Column(name = "suspended_at")
+    private LocalDateTime suspendedAt;
+
+    @Column(name = "suspend_reason", length = 255)
+    private String suspendReason;
+
     @Column(name = "referral_score")
     private Integer referralScore = 0;
     

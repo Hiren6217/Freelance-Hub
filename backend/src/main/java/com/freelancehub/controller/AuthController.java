@@ -37,6 +37,27 @@ public class AuthController {
 
     private static final int OTP_EXPIRY_MINUTES = 10;
 
+    /**
+     * If the account is suspended (unpaid platform dues), returns a 403 body the
+     * frontend uses to route the user to the pay-dues screen; null otherwise.
+     */
+    private ResponseEntity<Map<String, Object>> suspendedResponse(User user) {
+        if (!"SUSPENDED".equalsIgnoreCase(user.getAccountStatus())) {
+            return null;
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", "SUSPENDED");
+        body.put("userId", user.getId());
+        body.put("email", user.getEmail());
+        body.put("name", user.getName());
+        body.put("role", user.getRole());
+        body.put("error", "Account suspended");
+        body.put("message", user.getSuspendReason() != null
+            ? user.getSuspendReason()
+            : "Your account is suspended due to unpaid platform payments. Release them to restore access.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
     private static String generateOtpCode() {
         int code = new Random().nextInt(900_000) + 100_000;
         return String.valueOf(code);
@@ -183,6 +204,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
 
+        ResponseEntity<Map<String, Object>> suspended = suspendedResponse(user);
+        if (suspended != null) {
+            return suspended;
+        }
+
         String token = "token_" + user.getId() + "_" + System.currentTimeMillis();
 
         AuthResponse authResponse = AuthResponse.builder()
@@ -212,6 +238,11 @@ public class AuthController {
         if (!user.isEmailVerified()) {
             response.put("error", "Email not verified. Please complete signup verification first.");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        ResponseEntity<Map<String, Object>> suspended = suspendedResponse(user);
+        if (suspended != null) {
+            return suspended;
         }
 
         user = getOrCreateOtp(user, "LOGIN");
@@ -260,6 +291,11 @@ public class AuthController {
         user.setOtpPurpose(null);
         userRepository.save(user);
 
+        ResponseEntity<Map<String, Object>> suspended = suspendedResponse(user);
+        if (suspended != null) {
+            return suspended;
+        }
+
         String token = "token_" + user.getId() + "_" + System.currentTimeMillis();
         AuthResponse authResponse = AuthResponse.builder()
                 .message("Login successful")
@@ -288,6 +324,9 @@ public class AuthController {
                     response.put("email", user.getEmail());
                     response.put("name", user.getName());
                     response.put("role", user.getRole());
+                    response.put("accountStatus", user.getAccountStatus());
+                    // Let the dashboard guard route suspended clients to /pay-dues on refresh.
+                    response.put("suspended", "SUSPENDED".equalsIgnoreCase(user.getAccountStatus()));
                     return ResponseEntity.ok(response);
                 }
             } catch (Exception e) {

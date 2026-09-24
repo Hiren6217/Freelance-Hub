@@ -10,6 +10,7 @@ frontend/.env
 backend/target/
 backend/maven.zip
 backend/apache-maven-3.9.9/
+backend/mysql-data/
 
 # Logs
 *.log

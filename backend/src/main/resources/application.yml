@@ -5,6 +5,12 @@ openai:
   api:
     key: ${OPENAI_API_KEY:}
 
+paypal:
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  client-id: ${PAYPAL_CLIENT_ID:}
+  client-secret: ${PAYPAL_CLIENT_SECRET:}
+  currency: ${PAYPAL_CURRENCY:USD}
+
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/freelancehub_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true

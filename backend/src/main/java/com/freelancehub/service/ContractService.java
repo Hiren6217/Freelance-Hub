@@ -49,6 +49,9 @@ public class ContractService {
     @Autowired
     private MessageRepository messageRepository;
 
+    @Autowired
+    private PaymentService paymentService;
+
     public static boolean isValidBillingType(String billingType) {
         return billingType != null && BILLING_TYPES.contains(billingType.toUpperCase());
     }
@@ -102,6 +105,12 @@ public class ContractService {
 
         if (!normalized.equals(previous)) {
             notifyStatusChange(saved, normalized);
+
+            // A completed PROJECT contract makes the whole fee payable by the client.
+            // (HOURLY contracts create dues per logged hour instead — see TimeLogController.)
+            if (STATUS_COMPLETED.equals(normalized) && BILLING_PROJECT.equalsIgnoreCase(saved.getBillingType())) {
+                paymentService.createDueForProject(saved);
+            }
         }
         return saved;
     }

@@ -50,6 +50,11 @@ function LoginPageContent() {
         router.push(`/verify-otp?mode=login&email=${encodeURIComponent(normalizedEmail)}${otpQuery}`);
       }, 2000); // Delay to show OTP
     } catch (err: any) {
+      if (err?.data?.status === 'SUSPENDED') {
+        const suspendedId = err.data.userId;
+        router.push(`/pay-dues${suspendedId ? `?userId=${suspendedId}` : ''}`);
+        return;
+      }
       const message = err.message || 'Unable to send login OTP.';
       if (message.includes('Email not verified')) {
         const normalizedEmail = email.trim().toLowerCase();

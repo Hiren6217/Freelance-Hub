@@ -95,6 +95,11 @@ export default function VerifyOtpPageContent() {
 
       setError('Missing verification mode.');
     } catch (err: any) {
+      if (err?.data?.status === 'SUSPENDED') {
+        const suspendedId = err.data.userId;
+        router.push(`/pay-dues${suspendedId ? `?userId=${suspendedId}` : ''}`);
+        return;
+      }
       setError(err.message || 'OTP verification failed.');
     } finally {
       setLoading(false);

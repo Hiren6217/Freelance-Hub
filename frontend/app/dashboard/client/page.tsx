@@ -33,9 +33,11 @@ import {
   GOOGLE_MEET_NEW_URL,
   updateApplicationStatus,
   updateInterviewStatus,
+  verifyToken,
   type BillingType,
 } from '@/lib/api';
 import ChatThread from '@/app/components/ChatThread';
+import PayDues from '@/app/components/PayDues';
 
 export default function ClientDashboard() {
   const router = useRouter();
@@ -74,6 +76,17 @@ export default function ClientDashboard() {
     setUserName(name || 'Client');
     setUserEmail(email || '');
     setUserId(parsedUserId);
+
+    // Enforce a mid-session/refresh suspension: if the account was suspended for
+    // unpaid platform dues, route to the public pay screen instead of the dashboard.
+    const token = localStorage.getItem('authToken');
+    if (parsedUserId && token) {
+      void verifyToken(token)
+        .then((res: any) => {
+          if (res?.suspended) router.push(`/pay-dues?userId=${parsedUserId}`);
+        })
+        .catch(() => {});
+    }
 
     if (parsedUserId) {
       void fetchDashboardData(parsedUserId);
@@ -359,6 +372,13 @@ export default function ClientDashboard() {
                   </article>
                 ))}
               </div>
+            </div>
+            <div className="surface-card p-6">
+              <div className="mb-5">
+                <h3 className="flex items-center gap-2 text-xl font-semibold"><Receipt className="h-5 w-5 text-[#0a66c2]" />Payments due</h3>
+                <p className="text-sm text-slate-500">Release payments to your developers through the platform. Unpaid dues suspend your account until cleared.</p>
+              </div>
+              {userId ? <PayDues clientId={userId} /> : <p className="text-sm text-slate-500">Loading payments…</p>}
             </div>
           </section>
 
